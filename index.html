@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Dashboard | Task 2 Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .post-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .post-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="bg-[#f8fafc] min-h-screen text-slate-900">
+
+    <!-- Premium Navigation -->
+    <nav class="glass border-b border-slate-200 sticky top-0 z-50 px-8 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold leading-tight">InsightEngine</h1>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Admin Backend v2.0</p>
+            </div>
+        </div>
+        <div id="auth-status" class="flex items-center gap-6">
+            <div class="hidden sm:flex flex-col items-end">
+                <span id="user-display" class="text-sm font-bold text-slate-700">Guest Mode</span>
+                <span id="role-badge" class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold uppercase">Unauthorized</span>
+            </div>
+            <button onclick="logout()" id="logout-btn" class="hidden bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                Sign Out
+            </button>
+        </div>
+    </nav>
+
+    <!-- Stats Bar -->
+    <div class="max-w-6xl mx-auto px-6 pt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-slate-400 text-xs font-bold uppercase mb-1">Global Feed</p>
+            <h3 id="stat-total" class="text-2xl font-black">0</h3>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-slate-400 text-xs font-bold uppercase mb-1">Your Contributions</p>
+            <h3 id="stat-user" class="text-2xl font-black text-indigo-600">0</h3>
+        </div>
+        <div class="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100">
+            <p class="text-indigo-200 text-xs font-bold uppercase mb-1">System Health</p>
+            <h3 class="text-2xl font-black text-white">Active</h3>
+        </div>
+    </div>
+
+    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Sidebar: Controls -->
+        <section class="lg:col-span-4 space-y-6">
+            <!-- Auth Card -->
+            <div id="auth-card" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-base font-bold mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Security Gateway
+                </h2>
+                <div class="space-y-3">
+                    <input type="text" id="username" placeholder="Full Name (for Signup)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm">
+                    <input type="email" id="email" placeholder="Email Address" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm">
+                    <input type="password" id="password" placeholder="Password" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm">
+                    <div class="flex gap-2 pt-2">
+                        <button onclick="signup()" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 py-2.5 rounded-xl text-sm font-bold transition-all border border-slate-200">Register</button>
+                        <button onclick="login()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 transition-all">Sign In</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create/Edit Post Card -->
+            <div id="create-post-card" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 opacity-50 pointer-events-none grayscale transition-all">
+                <h2 id="composer-title" class="text-base font-bold mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Composer
+                </h2>
+                <div class="space-y-3">
+                    <input type="hidden" id="edit-post-id">
+                    <input type="text" id="post-title" placeholder="Catchy Headline" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium">
+                    <textarea id="post-content" placeholder="Share your insights..." rows="5" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm resize-none"></textarea>
+                    <div class="flex gap-2">
+                        <button id="cancel-edit" onclick="resetComposer()" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl text-sm font-bold transition-all">Cancel</button>
+                        <button id="submit-post-btn" onclick="handlePostSubmit()" class="flex-[2] bg-slate-900 hover:bg-black text-white py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2">
+                            Post to Network
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Content: Feed -->
+        <section class="lg:col-span-8 space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div class="relative w-full sm:w-72">
+                    <input type="text" id="search-input" oninput="filterPosts()" placeholder="Search articles..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3.5 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <button onclick="fetchPosts()" class="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 px-4 py-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh Sync
+                </button>
+            </div>
+            
+            <div id="posts-container" class="space-y-4">
+                <!-- Posts will be injected here -->
+                <div class="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-20 text-center text-slate-400">
+                    <p class="font-medium italic text-sm">Establishing connection to node...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Notification Engine -->
+    <div id="toast" class="fixed bottom-8 right-8 px-6 py-4 rounded-2xl shadow-2xl bg-slate-900 text-white transform translate-y-32 transition-all duration-500 flex items-center gap-3 z-[100] font-medium text-sm">
+        <span id="toast-icon"></span>
+        <span id="toast-msg"></span>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let allPosts = []; // Local cache for filtering
+        let token = localStorage.getItem('jwt_token');
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.className = `fixed bottom-8 right-8 px-6 py-4 rounded-2xl shadow-2xl text-white transform transition-all duration-500 z-[100] font-medium text-sm flex items-center gap-3 ${isError ? 'bg-red-600' : 'bg-slate-900'}`;
+            toast.classList.remove('translate-y-32');
+            setTimeout(() => toast.classList.add('translate-y-32'), 4000);
+        }
+
+        function parseJwt(token) {
+            try { return JSON.parse(atob(token.split('.')[1])); }
+            catch (e) { return null; }
+        }
+
+        function updateUI() {
+            const userEmail = localStorage.getItem('user_email');
+            const roleBadge = document.getElementById('role-badge');
+            
+            if (token) {
+                const decoded = parseJwt(token);
+                document.getElementById('user-display').textContent = userEmail;
+                roleBadge.textContent = decoded?.role || 'User';
+                roleBadge.className = "text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-bold uppercase";
+                
+                document.getElementById('logout-btn').classList.remove('hidden');
+                document.getElementById('create-post-card').classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
+                document.getElementById('auth-card').classList.add('hidden');
+            } else {
+                document.getElementById('user-display').textContent = `Guest Mode`;
+                roleBadge.textContent = 'Unauthorized';
+                roleBadge.className = "text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold uppercase";
+                
+                document.getElementById('logout-btn').classList.add('hidden');
+                document.getElementById('create-post-card').classList.add('opacity-50', 'pointer-events-none', 'grayscale');
+                document.getElementById('auth-card').classList.remove('hidden');
+            }
+        }
+
+        async function signup() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                const data = await res.json();
+                if (res.ok) showToast("Identity created. You may now sign in.");
+                else showToast(data.message || "Registration conflict", true);
+            } catch (err) { showToast("Network sync failure", true); }
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    token = data.token;
+                    localStorage.setItem('jwt_token', token);
+                    localStorage.setItem('user_email', email);
+                    showToast("Authentication successful");
+                    updateUI();
+                    fetchPosts();
+                } else {
+                    showToast(data.message || "Invalid credentials", true);
+                }
+            } catch (err) { showToast("Authentication server unavailable", true); }
+        }
+
+        function logout() {
+            token = null;
+            localStorage.clear();
+            updateUI();
+            fetchPosts();
+            showToast("Session terminated");
+        }
+
+        function startEdit(id, title, content) {
+            document.getElementById('edit-post-id').value = id;
+            document.getElementById('post-title').value = title;
+            document.getElementById('post-content').value = content;
+            document.getElementById('composer-title').innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Editing Article
+            `;
+            document.getElementById('submit-post-btn').textContent = "Update Article";
+            document.getElementById('cancel-edit').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetComposer() {
+            document.getElementById('edit-post-id').value = '';
+            document.getElementById('post-title').value = '';
+            document.getElementById('post-content').value = '';
+            document.getElementById('composer-title').innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Composer
+            `;
+            document.getElementById('submit-post-btn').textContent = "Post to Network";
+            document.getElementById('cancel-edit').classList.add('hidden');
+        }
+
+        async function handlePostSubmit() {
+            const id = document.getElementById('edit-post-id').value;
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+
+            if (!title || !content) return showToast("Article must have content", true);
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/posts/${id}` : `${API_URL}/posts`;
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ title, content })
+                });
+                if (res.ok) {
+                    showToast(id ? "Article updated" : "Article broadcasted to network");
+                    resetComposer();
+                    fetchPosts();
+                } else {
+                    showToast("Protocol rejection: Action failed", true);
+                }
+            } catch (err) { showToast("Transmission failure", true); }
+        }
+
+        async function deletePost(id) {
+            if (!confirm("Are you sure you want to delete this?")) return;
+            try {
+                const res = await fetch(`${API_URL}/posts/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    showToast("Resource deleted successfully");
+                    fetchPosts();
+                } else {
+                    showToast("Unauthorized: Access Denied", true);
+                }
+            } catch (err) { showToast("Action failed", true); }
+        }
+
+        async function fetchPosts() {
+            try {
+                const res = await fetch(`${API_URL}/posts`);
+                allPosts = await res.json();
+                renderPosts(allPosts);
+                updateStats(allPosts);
+            } catch (err) { 
+                document.getElementById('posts-container').innerHTML = `<div class="text-center py-20 text-red-400 font-bold uppercase tracking-widest text-sm">Backend Offline</div>`;
+            }
+        }
+
+        function updateStats(posts) {
+            const decoded = parseJwt(token);
+            const currentUserId = decoded?.id;
+            
+            document.getElementById('stat-total').textContent = posts.length;
+            document.getElementById('stat-user').textContent = posts.filter(p => p.user_id === currentUserId).length;
+        }
+
+        function filterPosts() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allPosts.filter(p => 
+                p.title.toLowerCase().includes(term) || 
+                p.content.toLowerCase().includes(term) ||
+                p.author.toLowerCase().includes(term)
+            );
+            renderPosts(filtered);
+        }
+
+        function renderPosts(posts) {
+            const container = document.getElementById('posts-container');
+            const decoded = parseJwt(token);
+            const currentUserId = decoded?.id;
+
+            if (posts.length === 0) {
+                container.innerHTML = `<div class="bg-white p-16 rounded-3xl border border-slate-200 text-center text-slate-400 italic text-sm">No records found matching criteria.</div>`;
+                return;
+            }
+
+            container.innerHTML = posts.map(post => {
+                const isOwner = post.user_id === currentUserId;
+                return `
+                    <div class="post-card bg-white p-6 rounded-3xl shadow-sm border border-slate-200 relative group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-black text-slate-900 tracking-tight">${post.title}</h3>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[10px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded uppercase tracking-tighter">Contributor</span>
+                                    <span class="text-xs text-slate-400 font-bold">${post.author}</span>
+                                </div>
+                            </div>
+                            ${isOwner ? `
+                                <div class="flex gap-2">
+                                    <button onclick='startEdit(${post.id}, ${JSON.stringify(post.title)}, ${JSON.stringify(post.content)})' class="text-slate-300 hover:text-indigo-600 transition-colors p-2 rounded-xl hover:bg-indigo-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button onclick="deletePost(${post.id})" class="text-slate-300 hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-6 font-medium">${post.content}</p>
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                            <span class="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
+                                ${new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Init
+        updateUI();
+        fetchPosts();
+    </script>
+</body>
+</html>
